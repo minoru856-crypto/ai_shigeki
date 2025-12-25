@@ -1,12 +1,26 @@
 
 import { Employee } from '../types';
 
-declare const XLSX: any;
+interface XLSXUtils {
+  sheet_to_json: (worksheet: any, options?: { header?: number; defval?: string; raw?: boolean }) => any[][];
+}
+
+interface XLSXWorkbook {
+  SheetNames: string[];
+  Sheets: { [key: string]: any };
+}
+
+interface XLSXLib {
+  read: (data: Uint8Array, options: { type: string; codepage?: number; raw?: boolean }) => XLSXWorkbook;
+  utils: XLSXUtils;
+}
+
+declare const XLSX: XLSXLib;
 
 /**
  * 文字列の徹底的な正規化
  */
-const extremeNormalize = (val: any): string => {
+const extremeNormalize = (val: string | number | null | undefined): string => {
   if (val === undefined || val === null) return '';
   return String(val)
     .trim()
@@ -25,12 +39,12 @@ const TARGET_HEADERS = {
   ROLE: ['役職', '雇用', '区分', '役割', '職種', '形態']
 };
 
-const processWorkbookRobustly = (workbook: any): Employee[] => {
+const processWorkbookRobustly = (workbook: XLSXWorkbook): Employee[] => {
   const firstSheetName = workbook.SheetNames[0];
   const worksheet = workbook.Sheets[firstSheetName];
   
   // 2次元配列として全データを取得
-  let rows: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+  let rows: (string | number)[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
   if (rows.length === 0) return [];
 
   // --- デリミタ異常の救済措置 ---

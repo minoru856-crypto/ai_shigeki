@@ -5,11 +5,52 @@ const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/drive/v3/r
 const SCOPES = "https://www.googleapis.com/auth/drive.file";
 const DATA_FILENAME = "rule_navigator_sync_data.json";
 
-declare const gapi: any;
-declare const google: any;
+interface GapiClient {
+  load: (api: string, callback: () => void) => void;
+  client: {
+    init: (config: { apiKey: string; discoveryDocs: string[] }) => Promise<void>;
+    getToken: () => any;
+    drive: {
+      files: {
+        list: (params: any) => Promise<{ result: { files: Array<{ id: string; name: string }> } }>;
+        get: (params: { fileId: string; alt: string }) => Promise<{ result: any }>;
+      };
+    };
+    request: (params: {
+      path: string;
+      method: string;
+      params?: any;
+      headers?: any;
+      body?: string;
+    }) => Promise<any>;
+  };
+}
+
+interface GoogleAuth {
+  accounts: {
+    oauth2: {
+      initTokenClient: (config: {
+        client_id: string;
+        scope: string;
+        callback: (response: { error?: string; access_token?: string }) => void;
+      }) => {
+        callback: (response: any) => void;
+        requestAccessToken: (options: { prompt: string }) => void;
+      };
+    };
+  };
+}
+
+declare const gapi: GapiClient;
+declare const google: GoogleAuth;
+
+interface TokenClient {
+  callback: (response: { error?: string; access_token?: string }) => void;
+  requestAccessToken: (options: { prompt: string }) => void;
+}
 
 export class GoogleDriveService {
-  private tokenClient: any = null;
+  private tokenClient: TokenClient | null = null;
   private accessToken: string | null = null;
 
   async init(clientId: string, apiKey: string): Promise<void> {
@@ -24,11 +65,11 @@ export class GoogleDriveService {
           this.tokenClient = google.accounts.oauth2.initTokenClient({
             client_id: clientId,
             scope: SCOPES,
-            callback: (resp: any) => {
+            callback: (resp: { error?: string; access_token?: string }) => {
               if (resp.error !== undefined) {
                 reject(resp);
               }
-              this.accessToken = resp.access_token;
+              this.accessToken = resp.access_token || null;
               resolve();
             },
           });
@@ -44,10 +85,10 @@ export class GoogleDriveService {
     return new Promise((resolve, reject) => {
       if (!this.tokenClient) return reject("Client not initialized");
       
-      this.tokenClient.callback = (resp: any) => {
+      this.tokenClient.callback = (resp: { error?: string; access_token?: string }) => {
         if (resp.error) return reject(resp.error);
-        this.accessToken = resp.access_token;
-        resolve(resp.access_token);
+        this.accessToken = resp.access_token || null;
+        resolve(resp.access_token || "");
       };
 
       if (gapi.client.getToken() === null) {

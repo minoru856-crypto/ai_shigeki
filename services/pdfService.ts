@@ -1,5 +1,21 @@
 
-declare const pdfjsLib: any;
+interface PdfJs {
+  GlobalWorkerOptions: {
+    workerSrc: string;
+  };
+  getDocument: (config: { data: ArrayBuffer }) => {
+    promise: Promise<{
+      numPages: number;
+      getPage: (pageNum: number) => Promise<{
+        getTextContent: () => Promise<{
+          items: Array<{ str: string }>;
+        }>;
+      }>;
+    }>;
+  };
+}
+
+declare const pdfjsLib: PdfJs;
 
 export const extractTextFromPdf = async (file: File): Promise<string> => {
   const arrayBuffer = await file.arrayBuffer();
