@@ -1,0 +1,5 @@
+{
+  "name": "就業規則ならほぼなんでも答える尾上茂樹",
+  "description": "An intelligent HR chatbot system that answers questions based on uploaded company work rules (PDFs). Features an administrative dashboard for managing regulations.",
+  "requestFramePermissions": []
+}
